@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/rand"
 	"encoding/json"
+	"fmt"
 	"log"
 	"math/big"
 	"net/http"
@@ -45,7 +46,6 @@ func drawHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 解析请求
 	var request struct {
 		Names string `json:"names"`
 	}
@@ -56,27 +56,19 @@ func drawHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 分割名单
 	names := strings.Split(strings.TrimSpace(request.Names), "\n")
 	names = filterEmptyStrings(names)
 
-	if len(names) == 0 {
-		http.Error(w, "名单为空", http.StatusBadRequest)
-		return
-	}
-
-	// 使用密码学安全的随机数生成器
-	n, err := rand.Int(rand.Reader, big.NewInt(int64(len(names))))
+	winner, err := drawWinner(names)
 	if err != nil {
-		http.Error(w, "随机数生成失败", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// 返回结果
 	result := struct {
 		Winner string `json:"winner"`
 	}{
-		Winner: names[n.Int64()],
+		Winner: winner,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -113,4 +105,17 @@ func openBrowser(url string) error {
 	}
 	args = append(args, url)
 	return exec.Command(cmd, args...).Start()
+}
+
+func drawWinner(names []string) (string, error) {
+	if len(names) == 0 {
+		return "", fmt.Errorf("名单为空")
+	}
+
+	n, err := rand.Int(rand.Reader, big.NewInt(int64(len(names))))
+	if err != nil {
+		return "", fmt.Errorf("随机数生成失败: %v", err)
+	}
+
+	return names[n.Int64()], nil
 }
