@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LC02 抽奖系统</title>
+    <style>
+        :root {
+            --primary-color: #FF4D00;
+            /* 亮橙色 */
+            --error-color: #f44336;
+            --bg-color: #ffffff;
+            /* 纯白背景 */
+            --box-color: #f8f8f8;
+            /* 浅灰色盒子 */
+            --text-color: #333333;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            background: var(--box-color);
+            padding: 40px;
+            border-radius: 12px;
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin: 0 auto;
+            max-width: 800px;
+        }
+
+        /* 添加类似LC02的角标装饰 */
+        .corner-decoration {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+        }
+
+        .top-right {
+            top: 10px;
+            right: 10px;
+            border-top: 2px solid var(--primary-color);
+            border-right: 2px solid var(--primary-color);
+        }
+
+        .bottom-left {
+            bottom: 10px;
+            left: 10px;
+            border-bottom: 2px solid var(--primary-color);
+            border-left: 2px solid var(--primary-color);
+        }
+
+        h1 {
+            color: var(--text-color);
+            text-align: left;
+            margin-bottom: 30px;
+            font-size: 2em;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+        }
+
+        h1::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 24px;
+            background-color: var(--primary-color);
+            margin-right: 12px;
+        }
+
+        textarea {
+            width: calc(100% - 30px);
+            height: 200px;
+            margin: 10px auto;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+            resize: vertical;
+            display: block;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 5px rgba(255, 77, 0, 0.1);
+        }
+
+        button {
+            display: inline-flex;
+            align-items: center;
+            padding: 12px 25px;
+            font-size: 16px;
+            color: var(--primary-color);
+            background-color: white;
+            border: 1px solid var(--primary-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        button:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .name-count {
+            color: var(--primary-color);
+            font-size: 14px;
+            font-family: monospace;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .name-count::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 2px;
+            background-color: var(--primary-color);
+        }
+
+        .description {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        /* 修改弹窗样式 */
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 40px;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 12px;
+            position: relative;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .winner-name {
+            color: var(--primary-color);
+            font-size: 1.3em;
+            font-weight: 500;
+            padding: 0 8px;
+        }
+
+        .close-modal {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 20px;
+            cursor: pointer;
+            color: #666;
+            transition: color 0.3s ease;
+        }
+
+        #result {
+            margin: 0;
+            padding: 2px 0;
+            text-align: center;
+            font-size: 24px;
+            color: var(--text-color);
+            display: inline-block;
+        }
+
+        /* 修改模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-result {
+            text-align: center;
+            font-size: 24px;
+            margin: 20px 0;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* 添加角标装饰到模态框 */
+        .modal-content::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 20px;
+            height: 20px;
+            border-top: 2px solid var(--primary-color);
+            border-right: 2px solid var(--primary-color);
+        }
+
+        .modal-content::after {
+            content: '';
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            width: 20px;
+            height: 20px;
+            border-bottom: 2px solid var(--primary-color);
+            border-left: 2px solid var(--primary-color);
+        }
+
+        .error {
+            color: var(--error-color);
+        }
+
+        /* 修改下方结果区域的样式 */
+        .result-container {
+            position: relative;
+            display: none;
+            padding: 8px 15px;
+            margin: 20px auto 0;
+            background: var(--box-color);
+            border-radius: 8px;
+            width: fit-content;
+            max-width: 90%;
+        }
+
+        /* 调整关闭按钮的位置 */
+        .close-btn {
+            position: absolute;
+            right: -25px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            cursor: pointer;
+            color: #666;
+            transition: color 0.3s ease;
+            padding: 5px;
+            z-index: 1;
+        }
+
+        .close-btn:hover {
+            color: var(--primary-color);
+        }
+
+        /* 修改容器在移动端的样式 */
+        @media screen and (max-width: 768px) {
+            .container {
+                padding: 20px;
+                /* 减小内边距 */
+            }
+
+            /* 调整模态框在移动端的位置和大小 */
+            .modal-content {
+                margin: 30% auto;
+                /* 更靠上一些 */
+                padding: 30px 20px;
+                width: 85%;
+                max-width: none;
+            }
+
+            /* 调整关闭按钮在移动端的位置 */
+            .close-modal {
+                right: 10px;
+                top: 10px;
+                font-size: 24px;
+                /* 增大点击区域 */
+                padding: 10px;
+                /* 增大点击区域 */
+            }
+
+            /* 调整标题在移动端的大小 */
+            h1 {
+                font-size: 1.5em;
+            }
+
+            /* 调整按钮在移动端的大小 */
+            button {
+                width: 100%;
+                /* 按钮占满宽度 */
+                margin: 10px 0;
+            }
+
+            /* 调整控制区域在移动端的布局 */
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            /* 调整计数器在移动端的位置 */
+            .name-count {
+                text-align: right;
+                margin-bottom: 10px;
+            }
+
+            /* 调整下方结果容器在移动端的样式 */
+            .result-container {
+                width: auto;
+                max-width: 100%;
+                margin: 20px 0;
+                padding: 8px 35px 8px 15px;
+                /* 为关闭按钮留出空间 */
+            }
+
+            /* 调整下方结果关闭按钮在移动端的位置 */
+            .close-btn {
+                right: 5px;
+                font-size: 24px;
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="corner-decoration top-right"></div>
+        <div class="corner-decoration bottom-left"></div>
+        <h1>LC02 抽奖系统</h1>
+        <div>
+            <p class="description">输入参与者名单，每行一个名字</p>
+            <textarea id="names" placeholder="张三&#10;李四&#10;王五" oninput="updateNameCount()"></textarea>
+            <div class="controls">
+                <p class="name-count">TOTAL: <span id="nameCount">0</span></p>
+                <button onclick="draw()">开始抽奖</button>
+            </div>
+        </div>
+        <div class="result-container" id="resultContainer">
+            <span class="close-btn" onclick="closeResult()">&times;</span>
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <div id="winnerModal" class="modal">
+        <div class="modal-content tech-border">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <div class="modal-result" id="modalResult"></div>
+        </div>
+    </div>
+
+    <script>
+        function updateNameCount() {
+            const textarea = document.getElementById('names');
+            const countSpan = document.getElementById('nameCount');
+            const names = textarea.value.split('\n').filter(name => name.trim() !== '');
+            countSpan.textContent = names.length;
+        }
+
+        function findDuplicates(names) {
+            const seen = new Set();
+            const duplicates = new Set();
+
+            names.forEach(name => {
+                name = name.trim();
+                if (name) {
+                    if (seen.has(name)) {
+                        duplicates.add(name);
+                    }
+                    seen.add(name);
+                }
+            });
+
+            return Array.from(duplicates);
+        }
+
+        function showModal(content) {
+            const modal = document.getElementById('winnerModal');
+            const modalResult = document.getElementById('modalResult');
+            const resultDiv = document.getElementById('result');
+            const resultContainer = document.getElementById('resultContainer');
+
+            modalResult.innerHTML = content;
+            resultDiv.innerHTML = content;
+            modal.style.display = 'block';
+            resultContainer.style.display = 'block';  // 显示结果容器
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('winnerModal');
+            modal.style.display = 'none';
+        }
+
+        // 点击模态框外部关闭
+        window.onclick = function (event) {
+            const modal = document.getElementById('winnerModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        function highlightWinner(winner) {
+            const textarea = document.getElementById('names');
+            const lines = textarea.value.split('\n');
+            const lineIndex = lines.findIndex(line => line.trim() === winner);
+
+            if (lineIndex === -1) return;
+
+            // 计算要滚动到的位置
+            const lineHeight = textarea.scrollHeight / lines.length;
+            const scrollPosition = lineHeight * lineIndex;
+            textarea.scrollTop = scrollPosition - textarea.clientHeight / 2;
+
+            // 保存当前的选择范围
+            const start = textarea.value.split('\n').slice(0, lineIndex).join('\n').length + (lineIndex > 0 ? 1 : 0);
+            const end = start + lines[lineIndex].length;
+
+            // 设置选择范围
+            textarea.setSelectionRange(start, end);
+            textarea.focus();
+
+            // 添加闪烁效果
+            let count = 0;
+            const interval = setInterval(() => {
+                count++;
+                if (count % 2 === 0) {
+                    textarea.setSelectionRange(start, end);
+                } else {
+                    textarea.setSelectionRange(0, 0);
+                }
+                if (count >= 6) { // 闪烁3次后停止
+                    clearInterval(interval);
+                    textarea.setSelectionRange(0, 0);
+                    textarea.blur();
+                }
+            }, 300);
+        }
+
+        async function draw() {
+            const names = document.getElementById('names').value.split('\n').filter(name => name.trim() !== '');
+            const button = document.querySelector('button');
+
+            // 检查重复
+            const duplicates = findDuplicates(names);
+            if (duplicates.length > 0) {
+                showModal(`<span class="error">❌ 发现重复名称：${duplicates.join(', ')}</span>`);
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = '抽奖中...';
+
+            try {
+                const response = await fetch('/draw', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ names: names.join('\n') }),
+                });
+
+                const data = await response.text();
+
+                try {
+                    const jsonData = JSON.parse(data);
+                    showModal(`🎉 恭喜 <span class="winner-name">${jsonData.winner}</span> 中奖！`);
+                    highlightWinner(jsonData.winner);
+                } catch (e) {
+                    showModal(`<span class="error">❌ ${data}</span>`);
+                }
+            } catch (error) {
+                showModal(`<span class="error">❌ ${error.message}</span>`);
+            } finally {
+                button.disabled = false;
+                button.textContent = '开始抽奖';
+            }
+        }
+
+        function closeResult() {
+            const resultContainer = document.getElementById('resultContainer');
+            resultContainer.style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>
